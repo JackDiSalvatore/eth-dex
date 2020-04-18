@@ -89,6 +89,5 @@ contract('Token', ([deployer, receiver]) => {
           .should.be.rejected
       })
     })
-
   })
 })
