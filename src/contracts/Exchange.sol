@@ -36,7 +36,7 @@ contract Exchange {
         return true;
     }
 
-    function withdrawEther(uint _amount) public returns (bool success) {
+    function withdrawEther(uint256 _amount) public returns (bool success) {
         require(tokens[ETHER][msg.sender] >= _amount);
 
         tokens[ETHER][msg.sender] = tokens[ETHER][msg.sender].sub(_amount);
@@ -46,7 +46,7 @@ contract Exchange {
         return true;
     }
 
-    function depositToken(address _token, uint _amount) public returns (bool success) {
+    function depositToken(address _token, uint256 _amount) public returns (bool success) {
         require(_token != ETHER);
         require(Token(_token).transferFrom(msg.sender, address(this), _amount));
         tokens[_token][msg.sender] = tokens[_token][msg.sender].add(_amount);
