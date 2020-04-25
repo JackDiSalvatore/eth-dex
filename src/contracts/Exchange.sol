@@ -13,6 +13,7 @@ contract Exchange {
     mapping(address => mapping(address => uint256)) public tokens;
     mapping(uint256 => _Order) public orders;
     mapping(uint256 => bool) public orderCancelled;
+    mapping(uint256 => bool) public orderFilled;
     uint256 public orderCount;
 
     event Deposit(address token, address user, uint256 amount, uint256 balance);
@@ -33,6 +34,16 @@ contract Exchange {
         uint256 amountGet,
         address tokenGive,
         uint256 amountGive,
+        uint256 timestamp
+    );
+    event Trade(
+        uint256 id,
+        address user,
+        address tokenGet,
+        uint256 amountGet,
+        address tokenGive,
+        uint256 amountGive,
+        address userFill,
         uint256 timestamp
     );
 
@@ -114,6 +125,48 @@ contract Exchange {
 
         emit Cancel(_order.id, msg.sender, _order.tokenGet, _order.amountGet, _order.tokenGive, _order.amountGive, now);
         return true;
+    }
+
+    function fillOrder(uint256 _id) public returns (bool success) {
+        require(_id > 0 && _id <= orderCount);
+        require(!orderCancelled[_id]);
+        require(!orderFilled[_id]);
+
+        _Order storage _order = orders[_id];
+        _trade(_order);
+
+        orderFilled[_order.id] = true;
+        return true;
+    }
+
+    function _trade(_Order storage _order) internal {
+        uint256 feeAmount = _order.amountGive.mul(feePercent).div(100);
+        // take feeAmount out of amountGet
+        uint256 amountGetWithFee = _order.amountGet.add(feeAmount);
+        uint256 amountGet = _order.amountGet;
+        uint256 amountGive = _order.amountGive;
+
+        // perspective of _order.user filling the order
+        // _order.user will increase their balance by amountGet
+        //    therefore, msg.sender will subtract amountGet from their balance
+        // _order.user will decrease their balance by amountGive
+        //    since this is what they are "giving"
+        //    msg.sender will increase there balance by amountGive
+
+        // add amountGive to sender
+        tokens[_order.tokenGive][msg.sender] = tokens[_order.tokenGive][msg.sender].add(amountGive);
+        // subtract amountGet from sender
+        tokens[_order.tokenGet][msg.sender] = tokens[_order.tokenGet][msg.sender].sub(amountGetWithFee);
+
+        // add amountGet to order user
+        tokens[_order.tokenGet][_order.user] = tokens[_order.tokenGet][_order.user].add(amountGet);
+        // subtract amountGive from order user
+        tokens[_order.tokenGive][_order.user] = tokens[_order.tokenGive][_order.user].sub(amountGive);
+
+        // add feeAmount (in tokenGet) to feeAccount
+        tokens[_order.tokenGet][feeAccount] = tokens[_order.tokenGet][feeAccount].add(feeAmount);
+
+        emit Trade(_order.id, _order.user, _order.tokenGet, _order.amountGet, _order.tokenGive, _order.amountGive, msg.sender, now);
     }
 
 }
