@@ -1,7 +1,7 @@
 {
-  "name": "eth-exchange",
+  "name": "eth-swap",
   "version": "0.1.0",
-  "description": "Decentralized Ethereum Token Exchange",
+  "description": "Decentralized Ethereum Token Swap",
   "author": "gregory@dappuniversity.com",
   "private": true,
   "dependencies": {
